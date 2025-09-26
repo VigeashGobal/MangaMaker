@@ -190,6 +190,9 @@ async function generateMangaPageVariations(
     // Check if OpenAI API key is available
     const openaiApiKey = process.env.OPENAI_API_KEY;
     
+    console.log("OpenAI API key available:", !!openaiApiKey);
+    console.log("Generating variations for:", pageType, description);
+    
     if (!openaiApiKey) {
       console.warn("OpenAI API key not found, using mock images");
       return generateMockVariations(description, pageType);
@@ -211,6 +214,8 @@ async function generateMangaPageVariations(
 
     for (let i = 0; i < 3; i++) {
       try {
+        console.log(`Generating variation ${i + 1} with prompt:`, `${basePrompt} ${styleVariations[i]}`);
+        
         const response = await openai.images.generate({
           model: "dall-e-3",
           prompt: `${basePrompt} ${styleVariations[i]}`,
@@ -219,18 +224,26 @@ async function generateMangaPageVariations(
           quality: "standard",
         });
 
+        console.log(`Variation ${i + 1} response:`, response);
+
         if (response.data && response.data[0]?.url) {
+          console.log(`Variation ${i + 1} success, URL:`, response.data[0].url);
           variations.push({
             imageUrl: response.data[0].url,
             prompt: `${basePrompt} ${styleVariations[i]}`,
             selected: false,
           });
+        } else {
+          console.log(`Variation ${i + 1} failed - no URL in response`);
+          throw new Error("No URL in response");
         }
       } catch (error) {
         console.error(`Failed to generate variation ${i + 1}:`, error);
         // Fallback to mock image
+        const mockUrl = `https://picsum.photos/800/1200?random=${i + 1}&text=${encodeURIComponent(basePrompt + " - Style " + (i + 1))}`;
+        console.log(`Using mock image for variation ${i + 1}:`, mockUrl);
         variations.push({
-          imageUrl: `https://picsum.photos/800/1200?random=${i + 1}&text=${encodeURIComponent(basePrompt + " - Style " + (i + 1))}`,
+          imageUrl: mockUrl,
           prompt: `${basePrompt} ${styleVariations[i]}`,
           selected: false,
         });
