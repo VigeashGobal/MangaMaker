@@ -33,7 +33,7 @@ export function PageGallery({ projectId, onBackToGenerator }: PageGalleryProps) 
 
       // Download the file
       const link = document.createElement('a');
-      link.href = result.pdfUrl || result.zipUrl;
+      link.href = exportFormat === 'pdf' ? result.pdfUrl : result.zipUrl;
       link.download = `manga-export-${projectId}.${exportFormat}`;
       document.body.appendChild(link);
       link.click();
