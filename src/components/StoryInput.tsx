@@ -1,12 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
 
 interface StoryInputProps {
-  onStorySubmit: (projectId: Id<"projects">) => void;
+  onStorySubmit: (projectId: string) => void;
 }
 
 export function StoryInput({ onStorySubmit }: StoryInputProps) {
@@ -14,8 +11,6 @@ export function StoryInput({ onStorySubmit }: StoryInputProps) {
   const [genre, setGenre] = useState("");
   const [style, setStyle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const createProject = useMutation(api.projects.create);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,14 +21,25 @@ export function StoryInput({ onStorySubmit }: StoryInputProps) {
       // For now, using a mock userId. In production, you'd implement proper auth
       const userId = "user-" + Date.now();
       
-      const projectId = await createProject({
-        storySummary: storySummary.trim(),
-        genre: genre.trim() || undefined,
-        style: style.trim() || undefined,
-        userId,
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          storySummary: storySummary.trim(),
+          genre: genre.trim() || undefined,
+          style: style.trim() || undefined,
+          userId,
+        }),
       });
 
-      onStorySubmit(projectId);
+      if (!response.ok) {
+        throw new Error('Failed to create project');
+      }
+
+      const project = await response.json();
+      onStorySubmit(project.id);
     } catch (error) {
       console.error("Failed to create project:", error);
       alert("Failed to create project. Please try again.");

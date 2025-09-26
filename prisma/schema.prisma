@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  storySummary String
+  genre        String?
+  style        String?
+  createdAt    DateTime @default(now())
+  userId       String
+  pages        Page[]
+
+  @@map("projects")
+}
+
+model Page {
+  id               String   @id @default(cuid())
+  projectId        String
+  pageType         String
+  description      String
+  generatedOptions Json     @default("[]")
+  selectedImage    String?
+  order            Int
+  createdAt        DateTime @default(now())
+  project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  generationJobs   GenerationJob[]
+
+  @@map("pages")
+}
+
+model GenerationJob {
+  id        String   @id @default(cuid())
+  projectId String
+  pageId    String
+  status    String   @default("pending") // 'pending', 'generating', 'completed', 'failed'
+  progress  Int      @default(0)
+  error     String?
+  createdAt DateTime @default(now())
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@map("generation_jobs")
+}

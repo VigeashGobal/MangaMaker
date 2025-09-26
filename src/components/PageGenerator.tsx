@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { useMutation, useQuery, useConvex } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 
 interface PageGeneratorProps {
-  projectId: Id<"projects">;
+  projectId: string;
   onComplete: () => void;
 }
 
@@ -25,23 +22,63 @@ export function PageGenerator({ projectId, onComplete }: PageGeneratorProps) {
   const [currentPageType, setCurrentPageType] = useState("");
   const [currentDescription, setCurrentDescription] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [currentPageId, setCurrentPageId] = useState<Id<"pages"> | null>(null);
+  const [currentPageId, setCurrentPageId] = useState<string | null>(null);
+  const [pages, setPages] = useState<Array<{
+    id: string;
+    pageType: string;
+    description: string;
+    generatedOptions: Array<{ imageUrl: string; prompt: string; selected: boolean }>;
+    selectedImage?: string;
+    order: number;
+  }>>([]);
+  const [generationStatus, setGenerationStatus] = useState<{
+    status: string;
+    progress: number;
+    error?: string;
+  } | null>(null);
 
-  const generatePage = useMutation(api.pages.generatePageOptions);
-  const selectOption = useMutation(api.pages.selectOption);
-  const pages = useQuery(api.pages.list, { projectId });
-  const generationStatus = useQuery(
-    api.pages.getGenerationStatus,
-    currentPageId ? { pageId: currentPageId } : "skip"
-  );
-
-  // Force refresh when generation completes
-  const convex = useConvex();
-  const refreshPages = useCallback(async () => {
-    if (convex) {
-      await convex.query(api.pages.list, { projectId });
+  // Fetch pages
+  const fetchPages = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/pages?projectId=${projectId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPages(data);
+      }
+    } catch (error) {
+      console.error('Error fetching pages:', error);
     }
-  }, [convex, projectId]);
+  }, [projectId]);
+
+  // Fetch generation status
+  const fetchGenerationStatus = async (pageId: string) => {
+    try {
+      const response = await fetch(`/api/generation-jobs/${pageId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setGenerationStatus(data);
+      }
+    } catch (error) {
+      console.error('Error fetching generation status:', error);
+    }
+  };
+
+  // Load pages on mount
+  useEffect(() => {
+    fetchPages();
+  }, [projectId, fetchPages]);
+
+  // Poll generation status when generating
+  useEffect(() => {
+    if (currentPageId && isGenerating) {
+      const interval = setInterval(() => {
+        fetchGenerationStatus(currentPageId);
+        fetchPages(); // Also refresh pages
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [currentPageId, isGenerating, fetchPages]);
 
   const handleGeneratePage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,12 +86,45 @@ export function PageGenerator({ projectId, onComplete }: PageGeneratorProps) {
 
     setIsGenerating(true);
     try {
-      const pageId = await generatePage({
-        projectId,
-        pageType: currentPageType,
-        description: currentDescription.trim(),
+      // Create page
+      const pageResponse = await fetch('/api/pages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId,
+          pageType: currentPageType,
+          description: currentDescription.trim(),
+          order: pages.length,
+        }),
       });
-      setCurrentPageId(pageId);
+
+      if (!pageResponse.ok) {
+        throw new Error('Failed to create page');
+      }
+
+      const page = await pageResponse.json();
+      setCurrentPageId(page.id);
+
+      // Start image generation
+      const generateResponse = await fetch('/api/generate-images', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pageId: page.id,
+          description: currentDescription.trim(),
+          pageType: currentPageType,
+        }),
+      });
+
+      if (!generateResponse.ok) {
+        throw new Error('Failed to generate images');
+      }
+
+      setCurrentDescription("");
     } catch (error) {
       console.error("Failed to generate page:", error);
       alert("Failed to generate page. Please try again.");
@@ -67,10 +137,27 @@ export function PageGenerator({ projectId, onComplete }: PageGeneratorProps) {
     if (!currentPageId) return;
 
     try {
-      await selectOption({
-        pageId: currentPageId,
-        optionIndex,
+      const currentPage = pages.find(p => p.id === currentPageId);
+      if (!currentPage || !currentPage.generatedOptions[optionIndex]) return;
+
+      const selectedImage = currentPage.generatedOptions[optionIndex].imageUrl;
+
+      const response = await fetch(`/api/pages/${currentPageId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          selectedImage,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to select option');
+      }
+
+      // Refresh pages to show updated selection
+      await fetchPages();
       
       // Reset form for next page
       setCurrentPageType("");
@@ -86,23 +173,15 @@ export function PageGenerator({ projectId, onComplete }: PageGeneratorProps) {
     onComplete();
   };
 
-  const currentPage = pages?.find(page => page._id === currentPageId);
+  const currentPage = pages?.find(page => page.id === currentPageId);
   const hasGeneratedPages = pages && pages.length > 0;
-
-  // Auto-refresh when generation completes
-  useEffect(() => {
-    if (generationStatus?.status === "completed" && currentPageId) {
-      console.log("Generation completed, refreshing pages...");
-      refreshPages();
-    }
-  }, [generationStatus?.status, currentPageId, refreshPages]);
 
   // Debug logging
   console.log("PageGenerator Debug:", {
     currentPageId,
     pages: pages?.length,
     currentPage: currentPage ? {
-      id: currentPage._id,
+      id: currentPage.id,
       generatedOptions: currentPage.generatedOptions.length,
       selectedImage: currentPage.selectedImage
     } : null,
@@ -206,7 +285,12 @@ export function PageGenerator({ projectId, onComplete }: PageGeneratorProps) {
             )}
             {/* Manual refresh button */}
             <button
-              onClick={refreshPages}
+              onClick={() => {
+                fetchPages();
+                if (currentPageId) {
+                  fetchGenerationStatus(currentPageId);
+                }
+              }}
               className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
             >
               Refresh Status
@@ -222,7 +306,7 @@ export function PageGenerator({ projectId, onComplete }: PageGeneratorProps) {
             Choose Your Favorite
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {currentPage.generatedOptions.map((option, index) => (
+            {currentPage.generatedOptions.map((option: { imageUrl: string; prompt: string; selected: boolean }, index: number) => (
               <div
                 key={index}
                 className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 ${

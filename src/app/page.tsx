@@ -4,13 +4,11 @@ import { useState } from "react";
 import { StoryInput } from "@/components/StoryInput";
 import { PageGenerator } from "@/components/PageGenerator";
 import { PageGallery } from "@/components/PageGallery";
-import { Id } from "../../convex/_generated/dataModel";
-
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<'story' | 'generator' | 'gallery'>('story');
-  const [projectId, setProjectId] = useState<Id<"projects"> | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
 
-  const handleStorySubmit = (newProjectId: Id<"projects">) => {
+  const handleStorySubmit = (newProjectId: string) => {
     setProjectId(newProjectId);
     setCurrentStep('generator');
   };
