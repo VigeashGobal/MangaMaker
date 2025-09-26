@@ -81,6 +81,18 @@ export function PageGenerator({ projectId, onComplete }: PageGeneratorProps) {
   const currentPage = pages?.find(page => page._id === currentPageId);
   const hasGeneratedPages = pages && pages.length > 0;
 
+  // Debug logging
+  console.log("PageGenerator Debug:", {
+    currentPageId,
+    pages: pages?.length,
+    currentPage: currentPage ? {
+      id: currentPage._id,
+      generatedOptions: currentPage.generatedOptions.length,
+      selectedImage: currentPage.selectedImage
+    } : null,
+    generationStatus
+  });
+
   return (
     <div className="space-y-8">
       {/* Progress indicator */}
