@@ -240,7 +240,7 @@ async function generateMangaPageVariations(
       } catch (error) {
         console.error(`Failed to generate variation ${i + 1}:`, error);
         // Fallback to mock image
-        const mockUrl = `https://picsum.photos/800/1200?random=${i + 1}&text=${encodeURIComponent(basePrompt + " - Style " + (i + 1))}`;
+        const mockUrl = `https://via.placeholder.com/800x1200/4A5568/FFFFFF?text=${encodeURIComponent("Manga " + pageType + " - Style " + (i + 1))}`;
         console.log(`Using mock image for variation ${i + 1}:`, mockUrl);
         variations.push({
           imageUrl: mockUrl,
@@ -264,19 +264,22 @@ function generateMockVariations(
 ): Array<{ imageUrl: string; prompt: string; selected: boolean }> {
   const basePrompt = `Manga ${pageType} page: ${description}`;
   
+  // Use more reliable placeholder image service
+  const timestamp = Date.now();
+  
   return [
     {
-      imageUrl: `https://picsum.photos/800/1200?random=1&text=${encodeURIComponent(basePrompt + " - Style 1")}`,
+      imageUrl: `https://via.placeholder.com/800x1200/4A5568/FFFFFF?text=${encodeURIComponent("Manga " + pageType + " - Style 1")}`,
       prompt: basePrompt + " - Style 1",
       selected: false,
     },
     {
-      imageUrl: `https://picsum.photos/800/1200?random=2&text=${encodeURIComponent(basePrompt + " - Style 2")}`,
+      imageUrl: `https://via.placeholder.com/800x1200/2D3748/FFFFFF?text=${encodeURIComponent("Manga " + pageType + " - Style 2")}`,
       prompt: basePrompt + " - Style 2",
       selected: false,
     },
     {
-      imageUrl: `https://picsum.photos/800/1200?random=3&text=${encodeURIComponent(basePrompt + " - Style 3")}`,
+      imageUrl: `https://via.placeholder.com/800x1200/1A202C/FFFFFF?text=${encodeURIComponent("Manga " + pageType + " - Style 3")}`,
       prompt: basePrompt + " - Style 3",
       selected: false,
     },
