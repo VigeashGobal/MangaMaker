@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
+import Image from "next/image";
 
 interface PageGalleryProps {
   projectId: Id<"projects">;
@@ -117,9 +118,11 @@ export function PageGallery({ projectId, onBackToGenerator }: PageGalleryProps) 
 
               {page.selectedImage ? (
                 <div className="space-y-4">
-                  <img
+                  <Image
                     src={page.selectedImage}
                     alt={`${page.pageType} page`}
+                    width={400}
+                    height={192}
                     className="w-full h-48 object-cover rounded-lg"
                   />
                   <div className="text-sm text-gray-300">

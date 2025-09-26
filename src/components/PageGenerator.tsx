@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
+import Image from "next/image";
 
 interface PageGeneratorProps {
   projectId: Id<"projects">;
@@ -196,9 +197,11 @@ export function PageGenerator({ projectId, onComplete }: PageGeneratorProps) {
                 }`}
                 onClick={() => handleSelectOption(index)}
               >
-                <img
+                <Image
                   src={option.imageUrl}
                   alt={`Option ${index + 1}`}
+                  width={400}
+                  height={256}
                   className="w-full h-64 object-cover"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-3">
