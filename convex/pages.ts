@@ -109,17 +109,30 @@ export const updateJobStatus = mutation({
     error: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    console.log("updateJobStatus called with:", {
+      pageId: args.pageId,
+      status: args.status,
+      progress: args.progress,
+      error: args.error
+    });
+    
     const job = await ctx.db
       .query("generationJobs")
       .filter((q) => q.eq(q.field("pageId"), args.pageId))
       .first();
     
+    console.log("Found job:", job ? { id: job._id, currentStatus: job.status } : "No job found");
+    
     if (job) {
-      await ctx.db.patch(job._id, {
+      const result = await ctx.db.patch(job._id, {
         status: args.status,
         progress: args.progress,
         error: args.error,
       });
+      console.log("updateJobStatus completed:", result);
+      return result;
+    } else {
+      console.log("No job found for pageId:", args.pageId);
     }
   },
 });
