@@ -1,15 +1,25 @@
 import { mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
 export const generatePDF = action({
   args: { projectId: v.id("projects") },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{
+    pdfUrl: string;
+    pageCount: number;
+    pages: Array<{
+      id: Id<"pages">;
+      type: string;
+      imageUrl: string;
+      order: number;
+    }>;
+  }> => {
     // Get all pages for the project
     const pages = await ctx.runQuery(api.pages.list, { projectId: args.projectId });
     
     // Filter only pages with selected images
-    const selectedPages = pages.filter(page => page.selectedImage);
+    const selectedPages = pages.filter((page: any) => page.selectedImage);
     
     if (selectedPages.length === 0) {
       throw new Error("No pages with selected images found");
@@ -27,7 +37,7 @@ export const generatePDF = action({
       });
 
       // Sort pages by order
-      const sortedPages = selectedPages.sort((a, b) => a.order - b.order);
+      const sortedPages = selectedPages.sort((a: any, b: any) => a.order - b.order);
 
       for (let i = 0; i < sortedPages.length; i++) {
         const page = sortedPages[i];
@@ -68,7 +78,7 @@ export const generatePDF = action({
       return {
         pdfUrl,
         pageCount: selectedPages.length,
-        pages: sortedPages.map(page => ({
+        pages: sortedPages.map((page: any) => ({
           id: page._id,
           type: page.pageType,
           imageUrl: page.selectedImage,
@@ -84,12 +94,21 @@ export const generatePDF = action({
 
 export const generateZIP = action({
   args: { projectId: v.id("projects") },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{
+    zipUrl: string;
+    pageCount: number;
+    pages: Array<{
+      id: Id<"pages">;
+      type: string;
+      imageUrl: string;
+      order: number;
+    }>;
+  }> => {
     // Get all pages for the project
     const pages = await ctx.runQuery(api.pages.list, { projectId: args.projectId });
     
     // Filter only pages with selected images
-    const selectedPages = pages.filter(page => page.selectedImage);
+    const selectedPages = pages.filter((page: any) => page.selectedImage);
     
     if (selectedPages.length === 0) {
       throw new Error("No pages with selected images found");
@@ -101,7 +120,7 @@ export const generateZIP = action({
       const zip = new JSZip();
 
       // Sort pages by order
-      const sortedPages = selectedPages.sort((a, b) => a.order - b.order);
+      const sortedPages = selectedPages.sort((a: any, b: any) => a.order - b.order);
 
       for (let i = 0; i < sortedPages.length; i++) {
         const page = sortedPages[i];
@@ -127,7 +146,7 @@ export const generateZIP = action({
       return {
         zipUrl,
         pageCount: selectedPages.length,
-        pages: sortedPages.map(page => ({
+        pages: sortedPages.map((page: any) => ({
           id: page._id,
           type: page.pageType,
           imageUrl: page.selectedImage,

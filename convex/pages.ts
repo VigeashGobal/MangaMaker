@@ -219,7 +219,7 @@ async function generateMangaPageVariations(
           quality: "standard",
         });
 
-        if (response.data[0]?.url) {
+        if (response.data && response.data[0]?.url) {
           variations.push({
             imageUrl: response.data[0].url,
             prompt: `${basePrompt} ${styleVariations[i]}`,
