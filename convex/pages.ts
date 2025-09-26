@@ -75,10 +75,12 @@ export const generateImages = action({
       });
 
       // Store generated options
+      console.log("Storing generated options:", variations.length, "variations");
       await ctx.runMutation(api.pages.updateGeneratedOptions, {
         pageId: args.pageId,
         options: variations,
       });
+      console.log("Generated options stored successfully");
 
       // Complete job
       await ctx.runMutation(api.pages.updateJobStatus, {
@@ -86,6 +88,7 @@ export const generateImages = action({
         status: "completed",
         progress: 100,
       });
+      console.log("Generation job completed successfully");
     } catch (error) {
       // Handle error
       await ctx.runMutation(api.pages.updateJobStatus, {
@@ -131,9 +134,17 @@ export const updateGeneratedOptions = mutation({
     })),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.pageId, {
+    console.log("updateGeneratedOptions called with:", {
+      pageId: args.pageId,
+      optionsCount: args.options.length
+    });
+    
+    const result = await ctx.db.patch(args.pageId, {
       generatedOptions: args.options,
     });
+    
+    console.log("updateGeneratedOptions completed:", result);
+    return result;
   },
 });
 
