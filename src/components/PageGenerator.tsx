@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useState, useCallback, useEffect } from "react";
+import { useMutation, useQuery, useConvex } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import Image from "next/image";
@@ -34,6 +34,14 @@ export function PageGenerator({ projectId, onComplete }: PageGeneratorProps) {
     api.pages.getGenerationStatus,
     currentPageId ? { pageId: currentPageId } : "skip"
   );
+
+  // Force refresh when generation completes
+  const convex = useConvex();
+  const refreshPages = useCallback(async () => {
+    if (convex) {
+      await convex.query(api.pages.list, { projectId });
+    }
+  }, [convex, projectId]);
 
   const handleGeneratePage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +88,14 @@ export function PageGenerator({ projectId, onComplete }: PageGeneratorProps) {
 
   const currentPage = pages?.find(page => page._id === currentPageId);
   const hasGeneratedPages = pages && pages.length > 0;
+
+  // Auto-refresh when generation completes
+  useEffect(() => {
+    if (generationStatus?.status === "completed" && currentPageId) {
+      console.log("Generation completed, refreshing pages...");
+      refreshPages();
+    }
+  }, [generationStatus?.status, currentPageId, refreshPages]);
 
   // Debug logging
   console.log("PageGenerator Debug:", {
