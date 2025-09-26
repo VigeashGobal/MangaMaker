@@ -24,22 +24,27 @@ export function PageGallery({ projectId, onBackToGenerator }: PageGalleryProps) 
 
     setIsExporting(true);
     try {
-      let result;
       if (exportFormat === 'pdf') {
-        result = await exportPDF({ projectId });
+        const result = await exportPDF({ projectId });
+        // Download the file
+        const link = document.createElement('a');
+        link.href = result.pdfUrl;
+        link.download = `manga-export-${projectId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        alert(`Export completed! ${result.pageCount} pages exported as PDF.`);
       } else {
-        result = await exportZIP({ projectId });
+        const result = await exportZIP({ projectId });
+        // Download the file
+        const link = document.createElement('a');
+        link.href = result.zipUrl;
+        link.download = `manga-export-${projectId}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        alert(`Export completed! ${result.pageCount} pages exported as ZIP.`);
       }
-
-      // Download the file
-      const link = document.createElement('a');
-      link.href = exportFormat === 'pdf' ? result.pdfUrl : result.zipUrl;
-      link.download = `manga-export-${projectId}.${exportFormat}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      alert(`Export completed! ${result.pageCount} pages exported as ${exportFormat.toUpperCase()}.`);
     } catch (error) {
       console.error("Export failed:", error);
       alert("Export failed. Please try again.");
